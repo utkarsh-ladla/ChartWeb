@@ -1,10 +1,16 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState  } from "react";
 import PropTypes from "prop-types";
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
 import { ChartCanvas, Chart } from "react-stockcharts";
 import { RSITooltip } from "react-stockcharts/lib/tooltip";
-import { atr, bollingerBand, macd, rsi, sma } from "react-stockcharts/lib/indicator";
+import {
+  atr,
+  bollingerBand,
+  macd,
+  rsi,
+  sma,
+} from "react-stockcharts/lib/indicator";
 
 import {
   BarSeries,
@@ -42,9 +48,20 @@ const CandleStickChartWithFullStochasticsIndicator = ({
   width,
   ratio,
   selectedIndicators,
+  mostRecentIndicator,
+  reorderedBelowChart = [],
 }) => {
+  const chartContainerRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+
+
   const height = 750;
+  // console.log("selectedIndicators in Chart:", selectedIndicators);
+  // console.log("reorderedBelowChart in Chart:", reorderedBelowChart);
   const margin = { left: 70, right: 70, top: 20, bottom: 30 };
+  var heightIndex = 0;
 
   const gridHeight = height - margin.top - margin.bottom;
   const gridWidth = width - margin.left - margin.right;
@@ -113,24 +130,23 @@ const CandleStickChartWithFullStochasticsIndicator = ({
       d.bb = c;
     })
     .accessor((d) => d.bb);
-    
 
   const macdCalculator = macd()
-			.options({
-				fast: 12,
-				slow: 26,
-				signal: 9,
-			})
-			.merge((d, c) => {d.macd = c;})
-			.accessor(d => d.macd);
+    .options({
+      fast: 12,
+      slow: 26,
+      signal: 9,
+    })
+    .merge((d, c) => {
+      d.macd = c;
+    })
+    .accessor((d) => d.macd);
 
-   
   const atrCalculator = atr()
-   .merge((d, c) => {
+    .merge((d, c) => {
       d.atr = c;
     })
-    .accessor((d) => d.atr);  
-
+    .accessor((d) => d.atr);
 
   const bbAppearance = {
     stroke: {
@@ -141,9 +157,13 @@ const CandleStickChartWithFullStochasticsIndicator = ({
     fill: "#4682B4",
   };
 
-  const calculatedData = macdCalculator(atrCalculator(rsiCalculator(sma20(
-    bb(ema20(ema50(slowSTO(fastSTO(fullSTO(initialData)))))))
-  )))
+  const calculatedData = macdCalculator(
+    atrCalculator(
+      rsiCalculator(
+        sma20(bb(ema20(ema50(slowSTO(fastSTO(fullSTO(initialData)))))))
+      )
+    )
+  );
   const xScaleProvider = discontinuousTimeScaleProvider.inputDateAccessor(
     (d) => d.date
   );
@@ -159,75 +179,119 @@ const CandleStickChartWithFullStochasticsIndicator = ({
     console.log(selectedIndicators);
   }, [selectedIndicators]);
 
-  const belowChartIndicators = [
-    {
-      id: "atr",
-      indicator: "ATR",
-      yAccessor: (d) => d.atr || null,
-      yExtents: [0, 100],
-      yAxisTicks: [20, 50, 80],
-      stroke: "blue",
-      tooltip: {
-        yAccessor: (d) => d.atrCalculator,
-        options: atrCalculator.options(),
-        label: "Slow STO",
-      },
-    },
-    {
-      id: "macd",
-      indicator: "MACD",
-      yAccessor: (d) => d.slowSTO,
-      yExtents: [0, 100],
-      yAxisTicks: [20, 50, 80],
-      stroke: "red",
-      tooltip: {
-        yAccessor: (d) => d.fastSTO,
-        options: fastSTO.options(),
-        label: "Fast STO",
-      },
-    },
-    {
-      id: "rsi",
-      indicator: "RSI",
-      yAccessor: (d) => d.rsi || null,
-      yExtents: [0, 100],
-      yAxisTicks: [30, 50, 70],
-      stroke: "green",
-      tooltip: {
-        yAccessor: (d) => d.rsi,
-        options: rsiCalculator.options(),
-        label: "RSI",
-      },
-    },
-  ];
-  
-  const belowChart = belowChartIndicators.map((indicator, index) => ({
-    id: indicator.id,
-    indicator: indicator.indicator,
-    component: (
-      <Chart
-        key={indicator.id}
-        id={index + 3}
-        yExtents={indicator.yExtents}
-        height={125}
-        origin={(w, h) => [0, h - (index + 1) * 125]}
-        padding={{ top: 10, bottom: 10 }}
-      >
-        <XAxis axisAt="bottom" orient="bottom" showTicks={false} outerTickSize={0} />
-        <YAxis axisAt="right" orient="right" tickValues={indicator.yAxisTicks} />
-        <MouseCoordinateY at="right" orient="right" displayFormat={format(".2f")} />
-        <LineSeries yAccessor={indicator.yAccessor} stroke={indicator.stroke} />
-        <StochasticTooltip
-          origin={[-38, 15]}
-          yAccessor={indicator.tooltip.yAccessor}
-          options={indicator.tooltip.options}
-          appearance={stoAppearance}
-          label={indicator.tooltip.label}
-        />
-      </Chart>
-    ),
-  }));
-  
+  let showTicks = false
+  const oldestIndicator = selectedIndicators[0];
+
+  // const belowChart = [
+  //   {
+  //     id: "rsi",
+  //     indicator: "rsi",
+  //     component: (index, {showTicks}) => {
+  //       return (
+  //         <Chart
+  //           id={6}
+  //           yExtents={[0, 100]}
+  //           height={125}
+  //           origin={(w, h) => [0, 225 + (index * 125)]}
+  //           padding={{ top: 10, bottom: 10 }}
+  //         >
+  //           <XAxis axisAt="bottom" orient="bottom" showTicks={showTicks} />
+  //           <YAxis axisAt="right" orient="right" />
+  //           <MouseCoordinateX
+  //             at="bottom"
+  //             orient="bottom"
+  //             displayFormat={timeFormat("%Y-%m-%d")}
+  //           />
+  //           <MouseCoordinateY
+  //             at="right"
+  //             orient="right"
+  //             displayFormat={format(".2f")}
+  //           />
+  //           <LineSeries yAccessor={(d) => d.rsi || null} stroke="blue" />
+  //           <RSITooltip
+  //             origin={[-38, 15]}
+  //             yAccessor={(d) => d.rsi}
+  //             options={rsiCalculator.options()}
+  //             label="RSI"
+  //           />
+  //         </Chart>
+  //       );
+  //     },
+  //   },
+  //   {
+  //     id: "atr",
+  //     indicator: "ATR",
+  //     component: (index, {showTicks}) => {
+  //       return (
+  //         <Chart
+  //           id={3}
+  //           yExtents={[0, 100]}
+  //           height={125}
+  //           origin={(w, h) => [0, 225 + (index * 125)]}
+  //           padding={{ top: 10, bottom: 10 }}
+  //         >
+  //           <XAxis
+  //             axisAt="bottom"
+  //             orient="bottom"
+  //             showTicks={showTicks}
+  //             outerTickSize={0}
+  //           />
+  //           <YAxis axisAt="right" orient="right" tickValues={[20, 50, 80]} />
+  //           <MouseCoordinateY
+  //             at="right"
+  //             orient="right"
+  //             displayFormat={format(".2f")}
+  //           />
+  //           <LineSeries yAccessor={(d) => d.atr || null} stroke="blue" />
+  //           <StochasticTooltip
+  //             origin={[-38, 15]}
+  //             yAccessor={(d) => d.atrCalculator}
+  //             options={atrCalculator.options()}
+  //             appearance={stoAppearance}
+  //             label="Slow STO"
+  //           />
+  //         </Chart>
+  //       );
+  //     },
+  //   },
+  //   {
+  //     id: "macd",
+  //     indicator: "MACD",
+  //     component: (index, {showTicks}) => {
+  //       return (
+  //         <Chart
+  //           id={4}
+  //           yExtents={[0, 100]}
+  //           height={125}
+  //           origin={(w, h) => [0, 225 + (index * 125)]}
+  //           padding={{ top: 10, bottom: 10 }}
+  //         >
+  //           <XAxis
+  //             axisAt="bottom"
+  //             orient="bottom"
+  //             showTicks={showTicks}
+  //             outerTickSize={0}
+  //           />
+  //           <YAxis axisAt="right" orient="right" tickValues={[20, 50, 80]} />
+  //           <MouseCoordinateY
+  //             at="right"
+  //             orient="right"
+  //             displayFormat={format(".2f")}
+  //           />
+  //           <StochasticSeries yAccessor={(d) => d.slowSTO} {...stoAppearance} />
+  //           <StochasticTooltip
+  //             origin={[-38, 15]}
+  //             yAccessor={(d) => d.fastSTO}
+  //             options={fastSTO.options()}
+  //             appearance={stoAppearance}
+  //             label="MACD"
+  //           />
+  //         </Chart>
+  //       );
+  //     },
+  //   },
+
+  // ];
 
   const mainChart = [
     {
@@ -273,10 +337,52 @@ const CandleStickChartWithFullStochasticsIndicator = ({
     },
   ];
 
-  
+
+  useEffect(() => {
+    const handleWheel = (event) => {
+      
+      if (chartContainerRef.current?.contains(event.target)) {
+        event.preventDefault();
+      }
+    };
+
+    const handleMouseDown = (event) => {
+      if (chartContainerRef.current?.contains(event.target) && event.button === 0) {
+        setIsDragging(true);
+        setStartY(event.clientY);
+        setScrollTop(window.scrollY);
+      }
+    };
+
+    const handleMouseMove = (event) => {
+      if (isDragging) {
+        const deltaY = event.clientY - startY;
+        window.scrollTo(0, scrollTop - deltaY);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener("wheel", handleWheel, { passive: false });
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("wheel", handleWheel);
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, startY, scrollTop]);
+
+
   return (
+    <div ref={chartContainerRef}>
     <ChartCanvas
-      height={750}
+      height={900}
       width={width}
       ratio={ratio}
       margin={margin}
@@ -287,10 +393,26 @@ const CandleStickChartWithFullStochasticsIndicator = ({
       xAccessor={xAccessor}
       displayXAccessor={displayXAccessor}
       xExtents={xExtents}
+      zoomEvent={true} 
     >
-      {belowChart.map((chart, index) =>
-        selectedIndicators.indexOf(chart.id) !== -1 ? chart.component : null
-      )}
+      {Array.isArray(reorderedBelowChart) &&
+        reorderedBelowChart.map((chart, index) => {
+          if (selectedIndicators.includes(chart.id)) {
+            heightIndex = heightIndex + 1;
+
+            const isMostRecent = chart.id === mostRecentIndicator;
+
+            if (process.env.NODE_ENV === "development") {
+              console.log(`Rendering chart: ${chart.id}, isMostRecent: ${isMostRecent}`);
+            }
+
+            return chart.component(heightIndex, { showTicks: isMostRecent });
+          }
+
+          return null;
+        })
+      }
+
 
       <Chart
         id={1}
@@ -302,7 +424,7 @@ const CandleStickChartWithFullStochasticsIndicator = ({
         <XAxis
           axisAt="bottom"
           orient="bottom"
-          showTicks={false}
+          showTicks={selectedIndicators.length === 0}
           outerTickSize={0}
         />
 
@@ -320,11 +442,11 @@ const CandleStickChartWithFullStochasticsIndicator = ({
         <CurrentCoordinate yAccessor={ema20.accessor()} fill={ema20.stroke()} />
         <CurrentCoordinate yAccessor={ema50.accessor()} fill={ema50.stroke()} /> */}
 
-        {mainChart.map((line, index) =>
-          selectedIndicators.indexOf(line.id) !== -1
+        {mainChart.map((line, index) => {
+          return selectedIndicators.indexOf(line.id) !== -1
             ? (line.cordinate, line.component)
-            : null
-        )}
+            : null;
+        })}
 
         <EdgeIndicator
           itemType="last"
@@ -363,7 +485,7 @@ const CandleStickChartWithFullStochasticsIndicator = ({
         id={2}
         yExtents={(d) => d.volume}
         height={100}
-        origin={(w, h) => [0, h - 475]}
+        origin={(w, h) => [0, h - 625]}
       >
         <YAxis
           axisAt="left"
@@ -380,39 +502,12 @@ const CandleStickChartWithFullStochasticsIndicator = ({
           yAccessor={(d) => d.volume}
           fill={(d) => (d.close > d.open ? "#6BA583" : "#FF0000")}
         />
-      </Chart>
-
-      <Chart
-        id={5}
-        yExtents={[0, 100]}
-        height={125}
-        origin={(w, h) => [0, h - 125]}
-        padding={{ top: 10, bottom: 10 }}
-      >
         {/* <XAxis axisAt="bottom" orient="bottom" {...xGrid} /> */}
-        {/* <YAxis axisAt="right" orient="right" tickValues={[20, 50, 80]} /> */}
-        <MouseCoordinateX
-          at="bottom"
-          orient="bottom"
-          displayFormat={timeFormat("%Y-%m-%d")}
-        />
-        <MouseCoordinateY
-          at="right"
-          orient="right"
-          displayFormat={format(".2f")}
-        />
-        {/* <StochasticSeries yAccessor={(d) => d.fullSTO} {...stoAppearance} /> */}
-        {/* <StochasticTooltip
-          origin={[-38, 15]}
-          yAccessor={(d) => d.fullSTO}
-          options={fullSTO.options()}
-          appearance={stoAppearance}
-          label="Full STO"
-        /> */}
       </Chart>
 
       <CrossHairCursor />
     </ChartCanvas>
+    </div>
   );
 };
 
