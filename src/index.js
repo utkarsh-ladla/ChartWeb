@@ -5,6 +5,7 @@ import { getData } from "./utils";
 import { TypeChooser } from "react-stockcharts/lib/helper";
 import { belowChart } from "./belowChart";
 import { timeParse } from "d3-time-format";
+// import {mainchart} from ""
 
 const ChartComponent = () => {
   const [data, setData] = useState(null);
@@ -27,9 +28,9 @@ const ChartComponent = () => {
     { id: "atr", name: "ATR: Average True Range" },
     { id: "macd", name: "MACD: Moving Average Convergence Divergence" },
     { id: "bollingerBands", name: "Bollinger Bands" },
-    //   { id: "pivotPoints", name: "Pivot Points" },
-    //   { id: "supertrend", name: "Supertrend" },
-    //   { id: "anchoredVWAP", name: "Anchored VWAP" },
+    { id: "wma20", name: "wma20" },
+    // { id: "tma20", name: "tma20" },
+    // { id: "heikinAshi", name: "heikinAshi" },
     //   { id: "vwap", name: "VWAP: Volume Weighted Average Price" },
     //   { id: "adx", name: "ADX: Average Directional Index" },
     //   { id: "cci", name: "CCI: Commodity Channel Index" },
@@ -119,10 +120,8 @@ const ChartComponent = () => {
   const handleCheckboxChange = (id) => {
     setSelectedIndicators((prev) => {
       const newSelectedIndicators = prev.includes(id)
-        ? prev.filter((item) => item !== id) // Remove the indicator if already selected
-        : [...prev, id]; // Add the indicator if not selected
-
-      // Update the mostRecentIndicator
+        ? prev.filter((item) => item !== id) 
+        : [...prev, id]; 
       setMostRecentIndicator(id);
 
       return newSelectedIndicators;
@@ -132,10 +131,11 @@ const ChartComponent = () => {
     name.toLowerCase().includes(searchInput.toLowerCase())
   );
 
-  // Reorder belowChart based on mostRecentIndicator
   const reorderedBelowChart = selectedIndicators
     .map((id) => belowChart.find((chart) => chart.id === id))
     .filter((chart) => chart !== undefined);
+
+  console.log(reorderedBelowChart)  
 
 
   return (
@@ -215,7 +215,7 @@ const ChartComponent = () => {
         </div>
 
         {/* Interval Selection Dropdown */}
-        <div style={{ position: "relative", width: "250px", marginBottom: "20px" }}>
+        <div style={{ position: "relative", width: "90px", marginBottom: "20px", marginLeft: "20px",marginRight: "auto" }}>
           <select
             value={interval}
             onChange={(e) => setInterval(e.target.value)}

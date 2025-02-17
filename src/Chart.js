@@ -1,16 +1,10 @@
-import React, { useEffect, useRef, useState  } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { format } from "d3-format";
 import { timeFormat } from "d3-time-format";
 import { ChartCanvas, Chart } from "react-stockcharts";
 import { RSITooltip } from "react-stockcharts/lib/tooltip";
-import {
-  atr,
-  bollingerBand,
-  macd,
-  rsi,
-  sma,
-} from "react-stockcharts/lib/indicator";
+import { atr, bollingerBand, macd, rsi, sma, wma, tma, heikinAshi } from "react-stockcharts/lib/indicator";
 
 import {
   BarSeries,
@@ -58,8 +52,6 @@ const CandleStickChartWithFullStochasticsIndicator = ({
 
 
   const height = 750;
-  // console.log("selectedIndicators in Chart:", selectedIndicators);
-  // console.log("reorderedBelowChart in Chart:", reorderedBelowChart);
   const margin = { left: 70, right: 70, top: 20, bottom: 30 };
   var heightIndex = 0;
 
@@ -131,6 +123,28 @@ const CandleStickChartWithFullStochasticsIndicator = ({
     })
     .accessor((d) => d.bb);
 
+  const wma20 = wma()
+    .id(4)
+    .options({ windowSize: 20 })
+    .merge((d, c) => {
+      d.wma = c;
+    })
+    .accessor((d) => d.wma);
+
+
+  const tma20 = tma()
+    .id(5) // Unique identifier
+    .options({ windowSize: 20 }) // Set the window size
+    .merge((d, c) => {
+      d.tma = c; // Merge the TMA value into the data object
+    })
+    .accessor((d) => d.tma); // Accessor function to retrieve the TMA value
+
+  const xScaleProvider = discontinuousTimeScaleProvider.inputDateAccessor(
+    (d) => d.date
+  );
+
+
   const macdCalculator = macd()
     .options({
       fast: 12,
@@ -157,16 +171,13 @@ const CandleStickChartWithFullStochasticsIndicator = ({
     fill: "#4682B4",
   };
 
-  const calculatedData = macdCalculator(
+  const calculatedData = tma20(wma20(macdCalculator(
     atrCalculator(
       rsiCalculator(
         sma20(bb(ema20(ema50(slowSTO(fastSTO(fullSTO(initialData)))))))
       )
-    )
-  );
-  const xScaleProvider = discontinuousTimeScaleProvider.inputDateAccessor(
-    (d) => d.date
-  );
+    ))
+  ));
 
   const { data, xScale, xAccessor, displayXAccessor } =
     xScaleProvider(calculatedData);
@@ -174,6 +185,9 @@ const CandleStickChartWithFullStochasticsIndicator = ({
   const start = xAccessor(last(data));
   const end = xAccessor(data[Math.max(0, data.length - 150)]);
   const xExtents = [start, end];
+  const stoAppearance = {
+    stroke: Object.assign({}, StochasticSeries.defaultProps.stroke),
+  };
 
   useEffect(() => {
     console.log(selectedIndicators);
@@ -325,6 +339,16 @@ const CandleStickChartWithFullStochasticsIndicator = ({
       ),
     },
     {
+      id: "wma20",
+      indicator: "wma20",
+      cordinate: (
+        <CurrentCoordinate yAccessor={wma20.accessor()} fill={wma20.stroke()} />
+      ),
+      component: (
+        <LineSeries yAccessor={wma20.accessor()} stroke={wma20.stroke()} />
+      ),
+    },
+    {
       id: "bollingerBands",
       indicator: "Bollinger Bands",
       cordinate: (
@@ -335,12 +359,40 @@ const CandleStickChartWithFullStochasticsIndicator = ({
       ),
       component: <BollingerSeries yAccessor={(d) => d.bb} {...bbAppearance} />,
     },
+
+    {
+      id: "tma20",
+      indicator: "tma20",
+      cordinate: (
+        <CurrentCoordinate yAccessor={(d) => d.tma20} fill={(d) => d.tma20} />
+      ),
+      component: (
+        <LineSeries yAccessor={(d) => d.tma20} stroke={(d) => d.tma20} />
+      ),
+    },
+    {
+      id: "heikinAshi",
+      indicator: "heikinAshi",
+      cordinate: (
+        <CurrentCoordinate yAccessor={(d) => d.heikinAshi.close} fill={(d) => d.heikinAshi.close} />
+      ),
+      component: (
+        <CandlestickSeries
+          yAccessor={(d) => ({
+            open: d.heikinAshi.open,
+            high: d.heikinAshi.high,
+            low: d.heikinAshi.low,
+            close: d.heikinAshi.close,
+          })}
+        />
+      ),
+    },
   ];
 
 
   useEffect(() => {
     const handleWheel = (event) => {
-      
+
       if (chartContainerRef.current?.contains(event.target)) {
         event.preventDefault();
       }
@@ -381,132 +433,138 @@ const CandleStickChartWithFullStochasticsIndicator = ({
 
   return (
     <div ref={chartContainerRef}>
-    <ChartCanvas
-      height={900}
-      width={width}
-      ratio={ratio}
-      margin={margin}
-      type={type}
-      seriesName="MSFT"
-      data={data}
-      xScale={xScale}
-      xAccessor={xAccessor}
-      displayXAccessor={displayXAccessor}
-      xExtents={xExtents}
-      zoomEvent={true} 
-    >
-      {Array.isArray(reorderedBelowChart) &&
-        reorderedBelowChart.map((chart, index) => {
-          if (selectedIndicators.includes(chart.id)) {
-            heightIndex = heightIndex + 1;
+      <ChartCanvas
+        height={900}
+        width={width}
+        ratio={ratio}
+        margin={margin}
+        type={type}
+        seriesName="MSFT"
+        data={data}
+        xScale={xScale}
+        xAccessor={xAccessor}
+        displayXAccessor={displayXAccessor}
+        xExtents={xExtents}
+        zoomEvent={true}
+      >
+        {Array.isArray(reorderedBelowChart) &&
+          reorderedBelowChart.map((chart, index) => {
+            if (selectedIndicators.includes(chart.id)) {
+              heightIndex = heightIndex + 1;
 
-            const isMostRecent = chart.id === mostRecentIndicator;
+              const isMostRecent = chart.id === mostRecentIndicator;
 
-            if (process.env.NODE_ENV === "development") {
-              console.log(`Rendering chart: ${chart.id}, isMostRecent: ${isMostRecent}`);
+              // if (process.env.NODE_ENV === "development") {
+              //   console.log(`Rendering chart: ${chart.id}, isMostRecent: ${isMostRecent}`);
+              // }
+
+              return chart.component(heightIndex, { showTicks: isMostRecent });
             }
 
-            return chart.component(heightIndex, { showTicks: isMostRecent });
-          }
-
-          return null;
-        })
-      }
+            return null;
+          })
+        }
 
 
-      <Chart
-        id={1}
-        height={325}
-        yExtents={(d) => [d.high, d.low]}
-        padding={{ top: 10, bottom: 20 }}
-      >
-        <YAxis axisAt="right" orient="right" ticks={5} {...yGrid} />
-        <XAxis
-          axisAt="bottom"
-          orient="bottom"
-          showTicks={selectedIndicators.length === 0}
-          outerTickSize={0}
-        />
+        <Chart
+          id={1}
+          height={325}
+          yExtents={(d) => [d.high, d.low]}
+          padding={{ top: 10, bottom: 20 }}
+        >
+          <YAxis axisAt="right" orient="right" ticks={5} {...yGrid} />
+          <XAxis
+            axisAt="bottom"
+            orient="bottom"
+            showTicks={selectedIndicators.length === 0}
+            outerTickSize={0}
+          />
 
-        <MouseCoordinateY
-          at="right"
-          orient="right"
-          displayFormat={format(".2f")}
-        />
+          <MouseCoordinateY
+            at="right"
+            orient="right"
+            displayFormat={format(".2f")}
+          />
 
-        <CandlestickSeries />
+          <CandlestickSeries />
 
-        {/* <LineSeries yAccessor={ema20.accessor()} stroke={ema20.stroke()} />
+          {/* <LineSeries yAccessor={ema20.accessor()} stroke={ema20.stroke()} />
         <LineSeries yAccessor={ema50.accessor()} stroke={ema50.stroke()} />
 
         <CurrentCoordinate yAccessor={ema20.accessor()} fill={ema20.stroke()} />
         <CurrentCoordinate yAccessor={ema50.accessor()} fill={ema50.stroke()} /> */}
 
-        {mainChart.map((line, index) => {
-          return selectedIndicators.indexOf(line.id) !== -1
-            ? (line.cordinate, line.component)
-            : null;
-        })}
+          {mainChart.map((line, index) => {
+            return selectedIndicators.indexOf(line.id) !== -1
+              ? (line.cordinate, line.component)
+              : null;
+          })}
 
-        <EdgeIndicator
-          itemType="last"
-          orient="right"
-          edgeAt="right"
-          yAccessor={(d) => d.close}
-          fill={(d) => (d.close > d.open ? "#6BA583" : "#FF0000")}
-        />
+          <EdgeIndicator
+            itemType="last"
+            orient="right"
+            edgeAt="right"
+            yAccessor={(d) => d.close}
+            fill={(d) => (d.close > d.open ? "#6BA583" : "#FF0000")}
+          />
 
-        <StraightLine type="vertical" xValue={608} />
-        <StraightLine type="vertical" xValue={558} strokeDasharray="Dot" />
-        <StraightLine type="vertical" xValue={578} strokeDasharray="LongDash" />
+          <StraightLine type="vertical" xValue={608} />
+          <StraightLine type="vertical" xValue={558} strokeDasharray="Dot" />
+          <StraightLine type="vertical" xValue={578} strokeDasharray="LongDash" />
 
-        <OHLCTooltip origin={[-40, -10]} />
-        <MovingAverageTooltip
-          onClick={(e) => console.log(e)}
-          origin={[-38, 5]}
-          options={[
-            {
-              yAccessor: ema20.accessor(),
-              type: ema20.type(),
-              stroke: ema20.stroke(),
-              windowSize: ema20.options().windowSize,
-            },
-            {
-              yAccessor: ema50.accessor(),
-              type: ema50.type(),
-              stroke: ema50.stroke(),
-              windowSize: ema50.options().windowSize,
-            },
-          ]}
-        />
-      </Chart>
+          <OHLCTooltip origin={[-40, -10]} />
+          <MovingAverageTooltip
+            onClick={(e) => console.log(e)}
+            origin={[-38, 5]}
+            options={[
+              {
+                yAccessor: ema20.accessor(),
+                type: ema20.type(),
+                stroke: ema20.stroke(),
+                windowSize: ema20.options().windowSize,
+              },
+              {
+                yAccessor: ema50.accessor(),
+                type: ema50.type(),
+                stroke: ema50.stroke(),
+                windowSize: ema50.options().windowSize,
+              },
+              {
+                yAccessor: ema50.accessor(),
+                type: ema50.type(),
+                stroke: ema50.stroke(),
+                windowSize: ema50.options().windowSize,
+              },
+            ]}
+          />
+        </Chart>
 
-      <Chart
-        id={2}
-        yExtents={(d) => d.volume}
-        height={100}
-        origin={(w, h) => [0, h - 625]}
-      >
-        <YAxis
-          axisAt="left"
-          orient="left"
-          ticks={5}
-          tickFormat={format(".2s")}
-        />
-        <MouseCoordinateY
-          at="left"
-          orient="left"
-          displayFormat={format(".4s")}
-        />
-        <BarSeries
-          yAccessor={(d) => d.volume}
-          fill={(d) => (d.close > d.open ? "#6BA583" : "#FF0000")}
-        />
-        {/* <XAxis axisAt="bottom" orient="bottom" {...xGrid} /> */}
-      </Chart>
+        <Chart
+          id={2}
+          yExtents={(d) => d.volume}
+          height={100}
+          origin={(w, h) => [0, h - 625]}
+        >
+          <YAxis
+            axisAt="left"
+            orient="left"
+            ticks={5}
+            tickFormat={format(".2s")}
+          />
+          <MouseCoordinateY
+            at="left"
+            orient="left"
+            displayFormat={format(".4s")}
+          />
+          <BarSeries
+            yAccessor={(d) => d.volume}
+            fill={(d) => (d.close > d.open ? "#6BA583" : "#FF0000")}
+          />
+          {/* <XAxis axisAt="bottom" orient="bottom" {...xGrid} /> */}
+        </Chart>
 
-      <CrossHairCursor />
-    </ChartCanvas>
+        <CrossHairCursor />
+      </ChartCanvas>
     </div>
   );
 };

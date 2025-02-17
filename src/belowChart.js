@@ -1,6 +1,5 @@
-// Define belowChart
 import React from "react";
-import {  Chart } from "react-stockcharts";
+import { Chart } from "react-stockcharts";
 import {
     atr,
     rsi,
@@ -22,6 +21,8 @@ import { ema, stochasticOscillator } from "react-stockcharts/lib/indicator";
 import {
     StochasticTooltip,
 } from "react-stockcharts/lib/tooltip";
+import { OHLCTooltip } from "react-stockcharts/lib/tooltip";
+
 const stoAppearance = {
     stroke: Object.assign({}, StochasticSeries.defaultProps.stroke),
 };
@@ -46,6 +47,8 @@ const fastSTO = stochasticOscillator()
         d.fastSTO = c;
     })
     .accessor((d) => d.fastSTO);
+
+
 const belowChart = [
     {
         id: "rsi",
@@ -154,6 +157,67 @@ const belowChart = [
             );
         },
     },
+    // {
+    //     id: "pivotPoints",
+    //     indicator: "pivotPoints",
+    //     component: (index, { showTicks }) => {
+    //         return (
+    //             <Chart
+    //                 id={7}
+    //                 yExtents={(d) => [d.pivot, d.r1, d.s1, d.r2, d.s2, d.r3, d.s3]}
+    //                 height={125}
+    //                 origin={(w, h) => [0, 225 + (index * 125)]}
+    //                 padding={{ top: 10, bottom: 10 }}
+    //             >
+    //                 <XAxis axisAt="bottom" orient="bottom" showTicks={showTicks} />
+    //                 <YAxis axisAt="right" orient="right" />
+    //                 <MouseCoordinateX at="bottom" orient="bottom" displayFormat={timeFormat("%Y-%m-%d")} />
+    //                 <MouseCoordinateY at="right" orient="right" displayFormat={format(".2f")} />
+    //                 <LineSeries yAccessor={(d) => d.pivot} stroke="orange" />
+    //                 <LineSeries yAccessor={(d) => d.r1} stroke="green" strokeDasharray="ShortDash" />
+    //                 <LineSeries yAccessor={(d) => d.s1} stroke="red" strokeDasharray="ShortDash" />
+    //                 <LineSeries yAccessor={(d) => d.r2} stroke="green" strokeDasharray="ShortDot" />
+    //                 <LineSeries yAccessor={(d) => d.s2} stroke="red" strokeDasharray="ShortDot" />
+    //                 <LineSeries yAccessor={(d) => d.r3} stroke="green" strokeDasharray="Dot" />
+    //                 <LineSeries yAccessor={(d) => d.s3} stroke="red" strokeDasharray="Dot" />
+    //                 <OHLCTooltip origin={[-38, 15]} />
+    //             </Chart>
+    //         );
+    //     },
+    // },
+    // {
+    //     id: "supertrend",
+    //     indicator: "supertrend",
+    //     component: (index, { showTicks }) => {
+    //         return (
+    //             <Chart
+    //                 id={8}
+    //                 yExtents={(d) => [d.supertrend]}
+    //                 height={125}
+    //                 origin={(w, h) => [0, 225 + (index * 125)]}
+    //                 padding={{ top: 10, bottom: 10 }}
+    //             >
+    //                 <XAxis axisAt="bottom" orient="bottom" showTicks={showTicks} />
+    //                 <YAxis axisAt="right" orient="right" />
+    //                 <MouseCoordinateX
+    //                     at="bottom"
+    //                     orient="bottom"
+    //                     displayFormat={timeFormat("%Y-%m-%d")}
+    //                 />
+    //                 <MouseCoordinateY
+    //                     at="right"
+    //                     orient="right"
+    //                     displayFormat={format(".2f")}
+    //                 />
+    //                 <LineSeries
+    //                     yAccessor={(d) => d.supertrend}
+    //                     stroke={(d) => (d.close > d.supertrend ? "green" : "red")}
+    //                 />
+    //                 <OHLCTooltip origin={[-38, 15]} />
+    //             </Chart>
+    //         );
+    //     },
+    // },
 ];
 
 // Export belowChart
