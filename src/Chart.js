@@ -36,6 +36,8 @@ const stoAppearance = {
   stroke: Object.assign({}, StochasticSeries.defaultProps.stroke),
 };
 
+
+
 const CandleStickChartWithFullStochasticsIndicator = ({
   type = "svg",
   data: initialData,
@@ -44,12 +46,14 @@ const CandleStickChartWithFullStochasticsIndicator = ({
   selectedIndicators,
   mostRecentIndicator,
   reorderedBelowChart = [],
+  SelectedInterval
+
 }) => {
   const chartContainerRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
-
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const height = 750;
   const margin = { left: 70, right: 70, top: 20, bottom: 30 };
@@ -188,6 +192,12 @@ const CandleStickChartWithFullStochasticsIndicator = ({
   const stoAppearance = {
     stroke: Object.assign({}, StochasticSeries.defaultProps.stroke),
   };
+
+  const indicators = [ema20, ema50, sma20, slowSTO, fastSTO, fullSTO, rsiCalculator, bb, wma20, tma20];
+
+  // Find the selected indicator from the list
+  const selectedInd = indicators.find(ind => ind.id() === selectedIndicators.id); // Assuming selectedIndicator contains an id
+
 
   useEffect(() => {
     console.log(selectedIndicators);
@@ -430,6 +440,51 @@ const CandleStickChartWithFullStochasticsIndicator = ({
     };
   }, [isDragging, startY, scrollTop]);
 
+  const getMovingAverageOptions = () => {
+    const options = [];
+    if (selectedIndicators.includes('ema')) {
+      options.push({
+        yAccessor: ema20.accessor(),
+        type: ema20.type(),
+        stroke: ema20.stroke(),
+        windowSize: ema20.options().windowSize,
+      });
+    }
+    if (selectedIndicators.includes('ema20')) {
+      options.push({
+        yAccessor: ema20.accessor(),
+        type: ema20.type(),
+        stroke: ema20.stroke(),
+        windowSize: ema20.options().windowSize,
+      });
+    }
+    if (selectedIndicators.includes('ema50')) {
+      options.push({
+        yAccessor: ema50.accessor(),
+        type: ema50.type(),
+        stroke: ema50.stroke(),
+        windowSize: ema50.options().windowSize,
+      });
+    }
+    if (selectedIndicators.includes('sma20')) {
+      options.push({
+        yAccessor: sma20.accessor(),
+        type: sma20.type(),
+        stroke: sma20.stroke(),
+        windowSize: sma20.options().windowSize,
+      });
+    }
+    if (selectedIndicators.includes('bb')) {
+      options.push({
+        yAccessor: bb.accessor(),
+        type: bb.type(),
+        stroke: bb.stroke(),
+        windowSize: bb.options().windowSize,
+      });
+    }
+    return options;
+  };
+
 
   return (
     <div ref={chartContainerRef}>
@@ -453,10 +508,6 @@ const CandleStickChartWithFullStochasticsIndicator = ({
               heightIndex = heightIndex + 1;
 
               const isMostRecent = chart.id === mostRecentIndicator;
-
-              // if (process.env.NODE_ENV === "development") {
-              //   console.log(`Rendering chart: ${chart.id}, isMostRecent: ${isMostRecent}`);
-              // }
 
               return chart.component(heightIndex, { showTicks: isMostRecent });
             }
@@ -516,26 +567,28 @@ const CandleStickChartWithFullStochasticsIndicator = ({
           <MovingAverageTooltip
             onClick={(e) => console.log(e)}
             origin={[-38, 5]}
-            options={[
-              {
-                yAccessor: ema20.accessor(),
-                type: ema20.type(),
-                stroke: ema20.stroke(),
-                windowSize: ema20.options().windowSize,
-              },
-              {
-                yAccessor: ema50.accessor(),
-                type: ema50.type(),
-                stroke: ema50.stroke(),
-                windowSize: ema50.options().windowSize,
-              },
-              {
-                yAccessor: ema50.accessor(),
-                type: ema50.type(),
-                stroke: ema50.stroke(),
-                windowSize: ema50.options().windowSize,
-              },
-            ]}
+            options={getMovingAverageOptions()
+            //   [
+            //   {
+            //     yAccessor: ema20.accessor(),
+            //     type: ema20.type(),
+            //     stroke: ema20.stroke(),
+            //     windowSize: ema20.options().windowSize,
+            //   },
+            //   {
+            //     yAccessor: ema50.accessor(),
+            //     type: ema50.type(),
+            //     stroke: ema50.stroke(),
+            //     windowSize: ema50.options().windowSize,
+            //   },
+            //   {
+            //     yAccessor: ema50.accessor(),
+            //     type: ema50.type(),
+            //     stroke: ema50.stroke(),
+            //     windowSize: ema50.options().windowSize,
+            //   },
+            // ]
+          }
           />
         </Chart>
 
