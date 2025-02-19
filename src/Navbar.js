@@ -1,134 +1,171 @@
-// import * as React from "react";
-// import { NavigationMenu } from "radix-ui";
-// import classNames from "classnames";
-// import { CaretDownIcon } from "@radix-ui/react-icons";
-// import "./style.css";
+// export default function Navbar({ searchTerm, handleSearch, showDropdown, filteredStocks, setSelectedInstrumentToken, candleData, interval }) {
+//     return <nav className="bg-card px-10 border border-border py-3 shadow-md">
+//         <div className="flex font-bold text items-center gap-1 text-xl">
+//             <div className="p-2 bg-primary rounded-full" />
+//             Siya
+//         </div>
+//     </nav>
+// }
 
-// const NavigationMenuDemo = () => {
-// 	return (
-// 		<NavigationMenu.Root className="NavigationMenuRoot">
-// 			<NavigationMenu.List className="NavigationMenuList">
-// 				<NavigationMenu.Item>
-// 					<NavigationMenu.Trigger className="NavigationMenuTrigger">
-// 						Learn <CaretDownIcon className="CaretDown" aria-hidden />
-// 					</NavigationMenu.Trigger>
-// 					<NavigationMenu.Content className="NavigationMenuContent">
-// 						<ul className="List one">
-// 							<li style={{ gridRow: "span 3" }}>
-// 								<NavigationMenu.Link asChild>
-// 									<a className="Callout" href="/">
-// 										<svg
-// 											aria-hidden
-// 											width="38"
-// 											height="38"
-// 											viewBox="0 0 25 25"
-// 											fill="white"
-// 										>
-// 											<path d="M12 25C7.58173 25 4 21.4183 4 17C4 12.5817 7.58173 9 12 9V25Z"></path>
-// 											<path d="M12 0H4V8H12V0Z"></path>
-// 											<path d="M17 8C19.2091 8 21 6.20914 21 4C21 1.79086 19.2091 0 17 0C14.7909 0 13 1.79086 13 4C13 6.20914 14.7909 8 17 8Z"></path>
-// 										</svg>
-// 										<div className="CalloutHeading">Radix Primitives</div>
-// 										<p className="CalloutText">
-// 											Unstyled, accessible components for React.
-// 										</p>
-// 									</a>
-// 								</NavigationMenu.Link>
-// 							</li>
+import React from "react";
+import { intervals } from "./data/data";
 
-// 							<ListItem href="https://stitches.dev/" title="Stitches">
-// 								CSS-in-JS with best-in-class developer experience.
-// 							</ListItem>
-// 							<ListItem href="/colors" title="Colors">
-// 								Beautiful, thought-out palettes with auto dark mode.
-// 							</ListItem>
-// 							<ListItem href="https://icons.radix-ui.com/" title="Icons">
-// 								A crisp set of 15x15 icons, balanced and consistent.
-// 							</ListItem>
-// 						</ul>
-// 					</NavigationMenu.Content>
-// 				</NavigationMenu.Item>
 
-// 				<NavigationMenu.Item>
-// 					<NavigationMenu.Trigger className="NavigationMenuTrigger">
-// 						Overview <CaretDownIcon className="CaretDown" aria-hidden />
-// 					</NavigationMenu.Trigger>
-// 					<NavigationMenu.Content className="NavigationMenuContent">
-// 						<ul className="List two">
-// 							<ListItem
-// 								title="Introduction"
-// 								href="/primitives/docs/overview/introduction"
-// 							>
-// 								Build high-quality, accessible design systems and web apps.
-// 							</ListItem>
-// 							<ListItem
-// 								title="Getting started"
-// 								href="/primitives/docs/overview/getting-started"
-// 							>
-// 								A quick tutorial to get you up and running with Radix
-// 								Primitives.
-// 							</ListItem>
-// 							<ListItem title="Styling" href="/primitives/docs/guides/styling">
-// 								Unstyled and compatible with any styling solution.
-// 							</ListItem>
-// 							<ListItem
-// 								title="Animation"
-// 								href="/primitives/docs/guides/animation"
-// 							>
-// 								Use CSS keyframes or any animation library of your choice.
-// 							</ListItem>
-// 							<ListItem
-// 								title="Accessibility"
-// 								href="/primitives/docs/overview/accessibility"
-// 							>
-// 								Tested in a range of browsers and assistive technologies.
-// 							</ListItem>
-// 							<ListItem
-// 								title="Releases"
-// 								href="/primitives/docs/overview/releases"
-// 							>
-// 								Radix Primitives releases and their changelogs.
-// 							</ListItem>
-// 						</ul>
-// 					</NavigationMenu.Content>
-// 				</NavigationMenu.Item>
+export default function Navbar({
+    searchTerm,
+    handleSearch,
+    showDropdown,
+    filteredStocks,
+    setShowDropdown,
+    setSelectedInstrumentToken,
+    candleData,
+    interval,
+    setInterval,
+}) {
+    return (
+        <nav className="bg-card px-10 border border-border py-3 shadow-md">
+            <div className="flex gap-10 items-center">
+                {/* Logo Section */}
+                <div className="flex font-bold text items-center gap-1 text-xl">
+                    <div className="p-2 bg-primary rounded-full" />
+                    Siya
+                </div>
 
-// 				<NavigationMenu.Item>
-// 					<NavigationMenu.Link
-// 						className="NavigationMenuLink"
-// 						href="https://github.com/radix-ui"
-// 					>
-// 						Github
-// 					</NavigationMenu.Link>
-// 				</NavigationMenu.Item>
+                {/* Search Input and Dropdown */}
+                <div className="relative  flex gap-2 ">
 
-// 				<NavigationMenu.Indicator className="NavigationMenuIndicator">
-// 					<div className="Arrow" />
-// 				</NavigationMenu.Indicator>
-// 			</NavigationMenu.List>
+                    <input
+                        type="text"
+                        placeholder="Search stock..."
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        onFocus={() => setShowDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                        className="w-full  px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-black"
+                    />
 
-// 			<div className="ViewportPosition">
-// 				<NavigationMenu.Viewport className="NavigationMenuViewport" />
-// 			</div>
-// 		</NavigationMenu.Root>
-// 	);
+                    {/* Dropdown for Search Results */}
+                    {showDropdown && (
+                        <div className="absolute top-12 min-w-72 max-h-72 overflow-y-auto mt-1 bg-white border border-border rounded-md shadow-lg z-10">
+                            {filteredStocks.length > 0 ? (
+                                filteredStocks.map((item, index) => (
+                                    <div
+                                        key={index}
+                                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 "
+                                        onMouseDown={() => {
+                                            setSelectedInstrumentToken(item.instrument_token);
+                                            candleData(item.instrument_token, interval);
+                                        }}
+                                    >
+                                        {item.tradingsymbol} - {item.exchange}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-gray-500">No data found</div>
+                            )}
+                        </div>
+                    )}
+            {/* Interval Selection Dropdown */}
+            <select
+                        value={interval}
+                        onChange={(e) =>setInterval(e.target.value)}
+                        className="  px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-black"
+                        style={{
+                            padding: "10px",
+                            background: "white",
+                           
+                            cursor: "pointer",
+                        }}
+                    >
+                       {intervals.map((intervalOption) => (
+                            <option key={intervalOption?.id} value={intervalOption?.id}>
+                                {intervalOption?.lable}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                
+                
+            </div>
+        </nav>
+    );
+}
+// import { useState } from "react";
+
+// const Navbar = ({ 
+//     searchTerm, handleSearch, showDropdown, setShowDropdown, filteredStocks, 
+//     setSelectedInstrumentToken, candleData, interval, setInterval, 
+//     selectedIndicators, handleCheckboxChange, indicators 
+// }) => {
+//     const [isOpen, setIsOpen] = useState(false);
+
+//     return (
+//         <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px", background: "#222", color: "white" }}>
+//             {/* Search Input */}
+//             <input
+//                 type="text"
+//                 placeholder="Search stock..."
+//                 value={searchTerm}
+//                 onChange={handleSearch}
+//                 onFocus={() => setShowDropdown(true)}
+//                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+//                 style={{
+//                     width: "200px",
+//                     padding: "8px",
+//                     border: "1px solid black",
+//                     borderRadius: "4px",
+//                     backgroundColor: "white",
+//                     color: "black",
+//                     outline: "none",
+//                 }}
+//             />
+
+           
+//             {/* Indicator Selection */}
+//             <div style={{ position: "relative" }}>
+//                 <button
+//                     onClick={() => setIsOpen(!isOpen)}
+//                     style={{
+//                         padding: "10px",
+//                         background: "black",
+//                         color: "white",
+//                         border: "none",
+//                         cursor: "pointer",
+//                     }}
+//                 >
+//                     Select Indicators
+//                 </button>
+//                 {isOpen && (
+//                     <div
+//                         style={{
+//                             position: "absolute",
+//                             top: "100%",
+//                             left: 0,
+//                             background: "white",
+//                             boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+//                             padding: "10px",
+//                             zIndex: 10,
+//                         }}
+//                     >
+//                         {indicators.map(({ id, name }) => (
+//                             <div key={id} style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
+//                                 <input
+//                                     id={id}
+//                                     type="checkbox"
+//                                     checked={selectedIndicators.includes(id)}
+//                                     onChange={() => handleCheckboxChange(id)}
+//                                     style={{ marginRight: "5px" }}
+//                                 />
+//                                 <label htmlFor={id} style={{ fontSize: "14px", color: "#333" }}>
+//                                     {name || id.toUpperCase()}
+//                                 </label>
+//                             </div>
+//                         ))}
+//                     </div>
+//                 )}
+//             </div>
+//         </nav>
+//     );
 // };
 
-// const ListItem = React.forwardRef(
-// 	({ className, children, title, ...props }, forwardedRef) => (
-// 		<li>
-// 			<NavigationMenu.Link asChild>
-// 				<a
-// 					className={classNames("ListItemLink", className)}
-// 					{...props}
-// 					ref={forwardedRef}
-// 				>
-// 					<div className="ListItemHeading">{title}</div>
-// 					<p className="ListItemText">{children}</p>
-// 				</a>
-// 			</NavigationMenu.Link>
-// 		</li>
-// 	),
-// );
-
-// export default NavigationMenuDemo;
+// export default Navbar

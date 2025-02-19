@@ -53,15 +53,16 @@ const belowChart = [
     {
         id: "rsi",
         indicator: "rsi",
-        component: (index, { showTicks }) => {
+        component: (index,dimensions, { showTicks }) => {
             return (
                 <Chart
                     id={6}
                     yExtents={[0, 100]}
-                    height={125}
-                    origin={(w, h) => [0, 225 + (index * 125)]}
+                    height={150}
+                    origin={(w, h) => [0,( dimensions?.height-(((dimensions?.height/100)*20))*index)]}
                     padding={{ top: 10, bottom: 10 }}
                 >
+                    {console.log("rsi",( dimensions?.height-(((dimensions?.height/100)*20))*index) ,index)}
                     <XAxis axisAt="bottom" orient="bottom" showTicks={showTicks} />
                     <YAxis axisAt="right" orient="right" />
                     <MouseCoordinateX
@@ -94,7 +95,7 @@ const belowChart = [
                     id={3}
                     yExtents={[0, 100]}
                     height={125}
-                    origin={(w, h) => [0, 225 + (index * 125)]}
+                    origin={(w, h) => [0, 475]}
                     padding={{ top: 10, bottom: 10 }}
                 >
                     <XAxis
@@ -110,13 +111,14 @@ const belowChart = [
                         displayFormat={format(".2f")}
                     />
                     <LineSeries yAccessor={(d) => d.atr || null} stroke="blue" />
-                    <StochasticTooltip
+                        
+                    {/* <StochasticTooltip
                         origin={[-38, 15]}
                         yAccessor={(d) => d.atrCalculator}
                         options={atrCalculator.options()}
-                        appearance={stoAppearance}
-                        label="Slow STO"
-                    />
+                        appearance={atrCalculator}
+                        label="ATR"
+                    /> */}
                 </Chart>
             );
         },
@@ -124,19 +126,20 @@ const belowChart = [
     {
         id: "macd",
         indicator: "MACD",
-        component: (index, { showTicks }) => {
+        component: (index, dimensions, { showTicks }) => {
             return (
                 <Chart
                     id={4}
                     yExtents={[0, 100]}
-                    height={125}
-                    origin={(w, h) => [0, 225 + (index * 125)]}
+                    height={150}
+                    origin={(w, h) => [0, ( dimensions?.height-(((dimensions?.height/100)*20))*index)]}
                     padding={{ top: 10, bottom: 10 }}
                 >
+                                        {console.log("macd",( dimensions?.height-(((dimensions?.height/100)*20))*index) ,index)}                
                     <XAxis
                         axisAt="bottom"
                         orient="bottom"
-                        showTicks={showTicks}
+                        showTicks={true}
                         outerTickSize={0}
                     />
                     <YAxis axisAt="right" orient="right" tickValues={[20, 50, 80]} />

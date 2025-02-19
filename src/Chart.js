@@ -53,7 +53,6 @@ const CandleStickChartWithFullStochasticsIndicator = ({
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const height = 750;
   const margin = { left: 70, right: 70, top: 20, bottom: 30 };
@@ -206,7 +205,6 @@ const CandleStickChartWithFullStochasticsIndicator = ({
   let showTicks = false
   const oldestIndicator = selectedIndicators[0];
 
-  // const belowChart = [
   //   {
   //     id: "rsi",
   //     indicator: "rsi",
@@ -484,12 +482,28 @@ const CandleStickChartWithFullStochasticsIndicator = ({
     }
     return options;
   };
+  const [dimensions, setDimensions] = useState({ width: window.innerWidth, height: 600 })
 
+  // useEffect(() => {
+  //   const updateDimensions = () => {
+  //     if (chartContainerRef.current) {
+  //       setDimensions({
+  //         width: chartContainerRef.current?.innerWidth,
+  //         height: chartContainerRef.current?.innerHeight,
+  //       })
+  //     }
+  //   }
+
+  //   updateDimensions() // Initial call
+  //   window.addEventListener("resize", updateDimensions)
+  //   return () => window.removeEventListener("resize", updateDimensions)
+  // }, [chartContainerRef])
 
   return (
-    <div ref={chartContainerRef}>
+    <div ref={chartContainerRef} >
+      {console.log(dimensions)}
       <ChartCanvas
-        height={900}
+        height={(dimensions?.height+50)+(125*reorderedBelowChart?.length)}
         width={width}
         ratio={ratio}
         margin={margin}
@@ -502,14 +516,14 @@ const CandleStickChartWithFullStochasticsIndicator = ({
         xExtents={xExtents}
         zoomEvent={true}
       >
+        {console.log(reorderedBelowChart)}
         {Array.isArray(reorderedBelowChart) &&
           reorderedBelowChart.map((chart, index) => {
             if (selectedIndicators.includes(chart.id)) {
-              heightIndex = heightIndex + 1;
+            
 
-              const isMostRecent = chart.id === mostRecentIndicator;
 
-              return chart.component(heightIndex, { showTicks: isMostRecent });
+              return chart.component(index+1,dimensions, { showTicks:index=1 == reorderedBelowChart?.length });
             }
 
             return null;
@@ -519,7 +533,9 @@ const CandleStickChartWithFullStochasticsIndicator = ({
 
         <Chart
           id={1}
-          height={325}
+          height={dimensions?.height -(((dimensions?.height/100)*20)*reorderedBelowChart?.length)}
+          origin={(w, h) => [0, 0 ]}
+
           yExtents={(d) => [d.high, d.low]}
           padding={{ top: 10, bottom: 20 }}
         >
@@ -527,7 +543,7 @@ const CandleStickChartWithFullStochasticsIndicator = ({
           <XAxis
             axisAt="bottom"
             orient="bottom"
-            showTicks={selectedIndicators.length === 0}
+            showTicks={reorderedBelowChart.length === 0}
             outerTickSize={0}
           />
 
@@ -537,13 +553,14 @@ const CandleStickChartWithFullStochasticsIndicator = ({
             displayFormat={format(".2f")}
           />
 
-          <CandlestickSeries />
+          <CandlestickSeries
+           wickStroke={(d) => (d.close > d.open ? "#EF5350" : "#26A69A")} // Green for bullish, Red for bearish
+           fill={(d) => (d.close > d.open ? "#EF5350" : "#26A69A")}
+           stroke={(d) => (d.close > d.open ? "#EF5350" : "#26A69A")}
+           opacity={1}
+          />
 
-          {/* <LineSeries yAccessor={ema20.accessor()} stroke={ema20.stroke()} />
-        <LineSeries yAccessor={ema50.accessor()} stroke={ema50.stroke()} />
-
-        <CurrentCoordinate yAccessor={ema20.accessor()} fill={ema20.stroke()} />
-        <CurrentCoordinate yAccessor={ema50.accessor()} fill={ema50.stroke()} /> */}
+        
 
           {mainChart.map((line, index) => {
             return selectedIndicators.indexOf(line.id) !== -1
@@ -568,26 +585,7 @@ const CandleStickChartWithFullStochasticsIndicator = ({
             onClick={(e) => console.log(e)}
             origin={[-38, 5]}
             options={getMovingAverageOptions()
-            //   [
-            //   {
-            //     yAccessor: ema20.accessor(),
-            //     type: ema20.type(),
-            //     stroke: ema20.stroke(),
-            //     windowSize: ema20.options().windowSize,
-            //   },
-            //   {
-            //     yAccessor: ema50.accessor(),
-            //     type: ema50.type(),
-            //     stroke: ema50.stroke(),
-            //     windowSize: ema50.options().windowSize,
-            //   },
-            //   {
-            //     yAccessor: ema50.accessor(),
-            //     type: ema50.type(),
-            //     stroke: ema50.stroke(),
-            //     windowSize: ema50.options().windowSize,
-            //   },
-            // ]
+            
           }
           />
         </Chart>
@@ -595,8 +593,8 @@ const CandleStickChartWithFullStochasticsIndicator = ({
         <Chart
           id={2}
           yExtents={(d) => d.volume}
-          height={100}
-          origin={(w, h) => [0, h - 625]}
+          height={200}
+          origin={(w, h) => [0, (dimensions?.height -(((dimensions?.height/100)*20)*reorderedBelowChart?.length))-200 ]}
         >
           <YAxis
             axisAt="left"
@@ -611,7 +609,7 @@ const CandleStickChartWithFullStochasticsIndicator = ({
           />
           <BarSeries
             yAccessor={(d) => d.volume}
-            fill={(d) => (d.close > d.open ? "#6BA583" : "#FF0000")}
+            fill={(d) => (d.close > d.open ? "#92D2CC" : "#F7A9A7")}
           />
           {/* <XAxis axisAt="bottom" orient="bottom" {...xGrid} /> */}
         </Chart>

@@ -8,6 +8,9 @@ import { timeParse } from "d3-time-format";
 import { mainChart } from "./mainChart"
 import { debounce } from "lodash";
 import { useHistory } from "react-router-dom";
+import Navbar from "./Navbar";
+import { MultiSelectDropdown } from "./components/MultiSelectDropdown";
+import { indicators } from "./data/data";
 
 
 
@@ -18,16 +21,31 @@ const ChartComponent = () => {
     const [searchInput, setSearchInput] = useState("");
     const [stockList, setStockList] = useState([]);
     const [filteredStocks, setFilteredStocks] = useState([]);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [searchTerm, setSearchTerm] = useState("idea");
     const [mostRecentIndicator, setMostRecentIndicator] = useState(null);
     const [showDropdown, setShowDropdown] = useState(false);
     const [interval, setInterval] = useState("minute"); // Default interval
-    const [selectedInstrumentToken, setSelectedInstrumentToken] = useState(null);
+    const [selectedInstrumentToken, setSelectedInstrumentToken] = useState(3677697);
     const [isSearching, setIsSearching] = useState(false);
-    // const [fromDate, setFromDate] = useState(new Date()); // Start with current date
-    const [loading, setLoading] = useState(false);
-    const chartRef = useRef(null);
+    
+    // const ws = new WebSocket("wss://api.siyacharting.com/api/ticker/ws"); // Replace with your WebSocket URL
 
+    // useEffect(() => {
+    //     ws.onmessage = (event) => {
+    //       const newCandle = JSON.parse(event.data);
+    //       setData((prevData) => {
+    //         const lastCandle = prevData[prevData.length - 1];
+    
+    //         if (lastCandle.time === newCandle.time) {
+    //           return prevData.map((c) => (c.time === newCandle.time ? newCandle : c)); // Update last candle
+    //         } else {
+    //           return [...prevData, newCandle]; // Add new candle
+    //         }
+    //       });
+    //     };
+    
+    //     return () => ws.close(); // Cleanup on unmount
+    //   }, []);
 
     useEffect(() => {
         const pathname = window.location.pathname;
@@ -37,31 +55,11 @@ const ChartComponent = () => {
     }, []);
     const history = useHistory();
 
-    const indicators = [
-        { id: "rsi", name: "RSI: Relative Strength Index" },
-        { id: "sma20", name: "SMA20: Simple Moving Average" },
-        { id: "ema", name: "EMA: Exponential Moving Average" },
-        { id: "ema50", name: "EMA50: Exponential Moving Average" },
-        { id: "atr", name: "ATR: Average True Range" },
-        { id: "macd", name: "MACD: Moving Average Convergence Divergence" },
-        { id: "bollingerBands", name: "Bollinger Bands" },
-        { id: "wma20", name: "wma20" },
-    ];
-
-    const intervals = [
-        "minute",
-        "3minute",
-        "5minute",
-        "10minute",
-        "15minute",
-        "30minute",
-        "60minute",
-        "Day"
-    ];
 
 
 
-    const debouncedGetStockList = debounce(async (query) => {
+
+    const debouncedGetStockList = async (query) => {
         if (!query) {
             setFilteredStocks([]);
             return;
@@ -80,13 +78,13 @@ const ChartComponent = () => {
         } finally {
             setIsSearching(false); // End search
         }
-    }, 2000);
+    }
+    
 
 
     const handleSearch = (e) => {
         const query = e.target.value;
         setSearchTerm(query);
-        debouncedGetStockList(query); // Call debounced function
 
     };
 
@@ -94,7 +92,7 @@ const ChartComponent = () => {
         return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}T${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
     };
 
-    
+
     const getStartDate = (interval) => {
         const date = new Date();
         if (interval === "day") {
@@ -122,14 +120,8 @@ const ChartComponent = () => {
         return fromDate;
     };
     const parseDate = timeParse("%Y-%m-%dT%H:%M:%S%Z");
-    console.log(formatDate(new Date()))
 
-    const candleData = async (instrument_token, interval, from_date = getStartDate(interval),to_date = formatDate(new Date())) => {
-        // let from_date = getStartDate(interval);
-        // let to_date = "2025-02-18T21:16";
-        // const date = new Date();
-        // const to_date = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}T${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-
+    const candleData = async (instrument_token, interval, from_date = getStartDate(interval), to_date = formatDate(new Date())) => {
         const response = await fetch(
             `http://110.227.194.239:5300/api/ds/historical?instrument_token=${instrument_token}&from_date=${from_date}&to_date=${to_date}&interval=${interval}`);
         const json = await response.json();
@@ -143,23 +135,18 @@ const ChartComponent = () => {
                 d.volume = +d.volume;
                 return d;
             });
-            console.log("Mapped Data:", newData); 
             setData(newData);
 
         }
     };
+    const xfatchGetStocklist = React.useCallback(debounce(debouncedGetStockList, 300), []);
 
     useEffect(() => {
-        debouncedGetStockList(searchTerm);
+        xfatchGetStocklist(searchTerm);
     }, [searchTerm]);
 
     useEffect(() => {
-        getData().then(setData).catch(console.error);
-        // setData()
-    }, []);
-
-    useEffect(() => {
-        if (selectedInstrumentToken) {
+        if (selectedInstrumentToken && selectedInstrumentToken) {
             candleData(selectedInstrumentToken, interval);
         }
     }, [interval, selectedInstrumentToken]);
@@ -193,135 +180,45 @@ const ChartComponent = () => {
         .map((id) => belowChart.find((chart) => chart.id === id))
         .filter((chart) => chart !== undefined);
 
-    console.log(reorderedBelowChart)
-   
 
     return (
         <div>
-            {/* <Navbar /> */}
+            <Navbar
+                searchTerm={searchTerm}
+                handleSearch={handleSearch}
+                showDropdown={showDropdown}
+                setShowDropdown={setShowDropdown}
+                filteredStocks={filteredStocks}
+                setSelectedInstrumentToken={setSelectedInstrumentToken}
+                candleData={candleData}
+                interval={interval} // Pass the interval as needed
+                setInterval={setInterval}
+            />
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div style={{ position: "relative", width: "250px" }}>
-                    <input
-                        type="text"
-                        placeholder="Search stock..."
-                        value={searchTerm}
-                        onChange={handleSearch}
-                        onFocus={() => setShowDropdown(true)}
-                        onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                        style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid black",
-                            borderRadius: "4px",
-                            backgroundColor: "white",
-                            color: "black",
-                            outline: "none",
-                        }}
-                    />
-                    {showDropdown && filteredStocks.length > 0 && (
-                        <div
-
-                            style={{
-                                position: "absolute",
-                                width: "100%",
-                                backgroundColor: "white",
-                                border: "1px solid black",
-                                borderTop: "none",
-                                borderRadius: "4px",
-                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-                                maxHeight: "150px",
-                                overflowY: "auto",
-                                zIndex: 10,
-                            }}
-                        >
-                            {filteredStocks.map((item, index) => (
-                                <div
-                                    key={index}
-                                    style={{
-                                        padding: "8px",
-                                        cursor: "pointer",
-                                        color: "black",
-                                        backgroundColor: "white",
-                                        borderBottom: "1px solid #eee",
-                                    }}
-                                    onMouseDown={() => {
-                                        setSelectedInstrumentToken(item.instrument_token);
-                                        candleData(item.instrument_token, interval);
-                                    }}
-
-                                >
-                                    {item.tradingsymbol}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {showDropdown && filteredStocks.length === 0 && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                width: "100%",
-                                backgroundColor: "white",
-                                border: "1px solid black",
-                                borderTop: "none",
-                                borderRadius: "4px",
-                                boxShadow: "0px 4px 6px rgba(0,0,0,0.1)",
-                                padding: "8px",
-                                color: "black",
-                                zIndex: 10,
-                            }}
-
-                        >
-                            No data found
-                        </div>
-                    )}
-                </div>
-
-                {/* Interval Selection Dropdown */}
-                <div style={{ position: "relative", width: "90px", marginBottom: "20px", marginLeft: "20px", marginRight: "auto" }}>
-                    <select
-                        value={interval}
-                        onChange={(e) => setInterval(e.target.value)}
-                        style={{
-                            width: "100%",
-                            padding: "10px",
-                            background: "black",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                        }}
-                    >
-                        {intervals.map((intervalOption) => (
-                            <option key={intervalOption} value={intervalOption}>
-                                {intervalOption}
-                            </option>
-                        ))}
-                    </select>
-                </div>
 
 
                 {/* Indicator Selection */}
                 <div
-                    style={{ position: "relative", width: "250px", marginBottom: "20px" }}
+                    style={{ position: "relative", width: "250px", margin: "20px" }}
                 >
                     <button
+                        className="w-full  px-1 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-black"
+
                         onClick={() => setIsOpen(!isOpen)}
                         style={{
-                            width: "100%",
+
                             padding: "10px",
-                            background: "black",
-                            color: "white",
-                            border: "none",
+                            background: "white",
                             cursor: "pointer",
                         }}
                     >
-                        Select Indicators
+                        Add Indicators
                     </button>
                     {isOpen && (
                         <div
                             style={{
                                 position: "absolute",
-                                top: "100%",
+                                top: "110%",
                                 left: 0,
                                 width: "100%",
                                 background: "white",
@@ -360,10 +257,7 @@ const ChartComponent = () => {
             </div>
 
             {/* Chart Component */}
-            <TypeChooser>
-                {(type) => (
-                    <Chart
-                        type={type}
+            <Chart
                         data={data}
                         selectedIndicators={selectedIndicators}
                         mostRecentIndicator={mostRecentIndicator}
@@ -371,11 +265,9 @@ const ChartComponent = () => {
                         token={selectedInstrumentToken}
                         selectedInterval={interval}
                     />
-                )}
-            </TypeChooser>
+
         </div>
     );
-
 
 };
 
